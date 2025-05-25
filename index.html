@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>JUKEN BINGO</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Nunito', 'ヒラギノ丸ゴ Pro W4', 'Hiragino Maru Gothic Pro', 'メイリオ', sans-serif;
+            background: linear-gradient(135deg, #ffeef8 0%, #f8e7ff 25%, #e7f8ff 50%, #f0fff0 75%, #fff8e7 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            color: #8b5a8c;
+            padding: 10px 5px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(255, 182, 193, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(221, 160, 221, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(173, 216, 230, 0.1) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        body.combo-mode {
+            background: linear-gradient(135deg, #ffb3d9 0%, #ffccf2 25%, #ffd9cc 50%, #ccffdd 75%, #ffffcc 100%);
+            animation: comboGlow 0.5s ease-in-out;
+        }
+
+        body.perfect-mode {
+            background: linear-gradient(135deg, #ff99e6 0%, #ccb3ff 25%, #99ddff 50%, #b3ffcc 75%, #ffe699 100%);
+        }
+
+        @keyframes comboGlow {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(1.2) hue-rotate(10deg); }
+            100% { filter: brightness(1); }
+        }
+
+        /* ゲーム説明ポップアップ */
+        .intro-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: modalFadeIn 0.5s ease-out;
+        }
+
+        .intro-modal.hidden {
+            display: none;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                backdrop-filter: blur(0px);
+            }
+            to {
+                opacity: 1;
+                backdrop-filter: blur(4px);
+            }
+        }
+
+        .intro-content {
+            background: linear-gradient(135deg, #ffeef8 0%, #f8e7ff 50%, #e7f8ff 100%);
+            border-radius: 25px;
+            padding: 30px 25px;
+            text-align: center;
+            max-width: 350px;
+            width: 90%;
+            box-shadow: 0 15px 40px rgba(255, 105, 180, 0.3);
+            border: 3px solid rgba(255, 182, 193, 0.5);
+            animation: introSlideIn 0.6s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .intro-content::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 182, 193, 0.1) 0%, transparent 70%);
+            animation: introSparkle 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes introSlideIn {
+            from {
+                transform: scale(0.8) translateY(-30px);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes introSparkle {
+            0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.3; }
+            50% { transform: rotate(180deg) scale(1.1); opacity: 0.6; }
+        }
+
+        .intro-title {
+            font-size: 1.8em;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff69b4, #da70d6, #ff1493, #ee82ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            filter: drop-shadow(2px 2px 4px rgba(255, 105, 180, 0.3));
+            position: relative;
+            z-index: 1;
+        }
+
+        .intro-text {
+            font-size: 1.1em;
+            color: #8b5a8c;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+
+        .intro-highlight {
+            background: linear-gradient(135deg, rgba(255, 182, 193, 0.3), rgba(221, 160, 221, 0.2));
+            padding: 12px 15px;
+            border-radius: 15px;
+            margin: 15px 0;
+            border: 2px solid rgba(255, 192, 203, 0.4);
+            font-weight: 700;
+            color: #d081d0;
+            box-shadow: 0 4px 12px rgba(255, 182, 193, 0.2);
+        }
+
+        .intro-ok-btn {
+            background: linear-gradient(135deg, #ff69b4, #da70d6, #ff1493);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            font-family: 'Nunito', sans-serif;
+            position: relative;
+            z-index: 1;
+        }
+
+        .intro-ok-btn:hover {
+            background: linear-gradient(135deg, #ff1493, #da70d6, #ff69b4);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 30px rgba(255, 20, 147, 0.5);
+        }
+
+        .intro-ok-btn:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            font-size: 24px;
+            animation: particle-float 2s ease-out forwards;
+            z-index: 1000;
+        }
+
+        @keyframes particle-float {
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-120px) rotate(360deg) scale(0.3);
+            }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            pointer-events: none;
+            animation: confetti-fall 3s ease-out forwards;
+            z-index: 1000;
+            border-radius: 50%;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                opacity: 1;
+                transform: translateY(-10px) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(100vh) rotate(1080deg);
+            }
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+            z-index: 10;
+            min-height: calc(100vh - 20px);
+            justify-content: flex-start;
+            padding: 8px 0 30px 0;
+        }
+
+        .instructions {
+            text-align: center;
+            font-size: 0.95em;
+            color: #d081d0;
+            padding: 8px 15px;
+            line-height: 1.5;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            border: 2px solid rgba(255, 192, 203, 0.3);
+            box-shadow: 0 4px 15px rgba(255, 182, 193, 0.2);
+        }
+
+        .title {
+            text-align: center;
+            font-size: 2.4em;
+            font-weight: 800;
+            cursor: pointer;
+            background: linear-gradient(45deg, #ff69b4, #da70d6, #ff1493, #ee82ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(255, 105, 180, 0.3);
+            user-select: none;
+            letter-spacing: 3px;
+            margin: 0;
+            padding: 15px 0 5px 0;
+            position: relative;
+            filter: drop-shadow(2px 2px 4px rgba(255, 182, 193, 0.3));
+        }
+
+        .title:hover {
+            transform: scale(1.05);
+            transition: transform 0.3s ease;
+            text-shadow: 0 0 30px rgba(255, 105, 180, 0.5);
+        }
+
+        @keyframes badgeAppear {
+            0% { opacity: 0; transform: scale(0) rotate(-180deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .combo-display {
+            background: linear-gradient(45deg, #ff69b4, #ff1493, #da70d6);
+            color: white;
+            font-size: 1.2em;
+            font-weight: 700;
+            text-align: center;
+            padding: 8px;
+            border-radius: 20px;
+            transform: scale(0);
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .combo-display.show {
+            transform: scale(1);
+            opacity: 1;
+            animation: comboPulse 0.6s ease-in-out;
+        }
+
+        @keyframes comboPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1) rotate(2deg); }
+        }
+
+        .info-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .info-item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 182, 193, 0.2));
+            padding: 8px;
+            border-radius: 15px;
+            text-align: center;
+            white-space: nowrap;
+            border: 1px solid rgba(255, 192, 203, 0.3);
+            box-shadow: 0 3px 10px rgba(255, 182, 193, 0.2);
+        }
+
+        .target-section {
+            text-align: center;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(221, 160, 221, 0.3));
+            padding: 12px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 192, 203, 0.4);
+            box-shadow: 0 6px 20px rgba(255, 182, 193, 0.3);
+        }
+
+        .target-label {
+            font-size: 0.9em;
+            margin-bottom: 2px;
+            color: #d081d0;
+            font-weight: 600;
+        }
+
+        .target-number {
+            font-size: 2.2em;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff69b4, #da70d6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(2px 2px 4px rgba(255, 105, 180, 0.3));
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        .card {
+            aspect-ratio: 2/3;
+            background: linear-gradient(135deg, #fff 0%, #ffe6f2 50%, #fff 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #8b5a8c;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 182, 193, 0.3);
+            user-select: none;
+            border: 2px solid rgba(255, 192, 203, 0.4);
+        }
+
+        .card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(255, 105, 180, 0.4);
+            border-color: #ff69b4;
+        }
+
+        .card.selected {
+            background: linear-gradient(135deg, #ffb3d9, #ff99cc);
+            color: white;
+            transform: scale(1.08) rotate(3deg);
+            border-color: #ffd700;
+            animation: cardWiggle 0.4s ease-in-out;
+            box-shadow: 0 8px 30px rgba(255, 182, 193, 0.5);
+        }
+
+        @keyframes cardWiggle {
+            0%, 100% { transform: scale(1.08) rotate(3deg); }
+            25% { transform: scale(1.08) rotate(-2deg); }
+            75% { transform: scale(1.08) rotate(5deg); }
+        }
+
+        .card.used {
+            background: linear-gradient(135deg, #e6e6fa, #d8bfd8);
+            color: #9370db;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.6;
+        }
+
+        .operators {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .operator {
+            padding: 12px;
+            background: linear-gradient(135deg, #ff69b4, #da70d6, #ff1493);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .operator:hover {
+            background: linear-gradient(135deg, #ff1493, #da70d6, #ff69b4);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 20, 147, 0.5);
+        }
+
+        .message {
+            text-align: center;
+            font-size: 0.9em;
+            font-weight: 600;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 182, 193, 0.2));
+            padding: 8px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 192, 203, 0.3);
+            box-shadow: 0 3px 10px rgba(255, 182, 193, 0.2);
+        }
+
+        .success {
+            background: linear-gradient(135deg, rgba(152, 251, 152, 0.8), rgba(144, 238, 144, 0.6));
+            animation: successFlash 0.8s ease-in-out;
+            border-color: #98fb98;
+        }
+
+        .error {
+            background: linear-gradient(135deg, rgba(255, 182, 193, 0.8), rgba(255, 192, 203, 0.6));
+            animation: shake 0.6s ease-in-out;
+            border-color: #ffb6c1;
+        }
+
+        @keyframes successFlash {
+            0%, 100% { background: linear-gradient(135deg, rgba(152, 251, 152, 0.8), rgba(144, 238, 144, 0.6)); }
+            50% { background: linear-gradient(135deg, rgba(144, 238, 144, 1), rgba(152, 251, 152, 0.9)); transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+            20%, 40%, 60%, 80% { transform: translateX(4px); }
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #98fb98, #90ee90);
+            color: #2e8b57;
+        }
+
+        .btn-start:hover {
+            background: linear-gradient(135deg, #90ee90, #98fb98);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(152, 251, 152, 0.4);
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #ffd700, #ffec8c);
+            color: #b8860b;
+        }
+
+        .btn-clear:hover {
+            background: linear-gradient(135deg, #ffec8c, #ffd700);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-retry {
+            background: linear-gradient(135deg, #dda0dd, #d8bfd8);
+            color: #8b008b;
+        }
+
+        .btn-retry:hover {
+            background: linear-gradient(135deg, #d8bfd8, #dda0dd);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(221, 160, 221, 0.4);
+        }
+
+        .btn:disabled {
+            background: #e6e6fa;
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.6;
+        }
+
+        .stats-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .stat-item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 182, 193, 0.2));
+            padding: 10px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 0.8em;
+            border: 1px solid rgba(255, 192, 203, 0.3);
+            box-shadow: 0 3px 10px rgba(255, 182, 193, 0.2);
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ff69b4, #da70d6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-top: 3px;
+        }
+
+        .shuffling {
+            animation: numberShuffle 0.1s infinite;
+        }
+
+        @keyframes numberShuffle {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        /* モバイル対応 */
+        @media (max-width: 480px) {
+            .title {
+                font-size: 2.1em;
+                padding: 15px 0 8px 0;
+            }
+            
+            .card {
+                font-size: 1.4em;
+            }
+            
+            .operator {
+                font-size: 1.1em;
+                padding: 10px;
+            }
+            
+            .target-number {
+                font-size: 2em;
+            }
+
+            .info-section {
+                font-size: 0.8em;
+            }
+
+            .intro-content {
+                padding: 25px 20px;
+                max-width: 320px;
+            }
+
+            .intro-title {
+                font-size: 1.6em;
+            }
+
+            .intro-text {
+                font-size: 1em;
+            }
+
+            .intro-ok-btn {
+                padding: 12px 35px;
+                font-size: 1.1em;
+            }
+        }
+
+        @media (max-height: 800px) {
+            .game-container {
+                min-height: auto;
+                gap: 4px;
+                padding: 5px 0 25px 0;
+            }
+            
+            .title {
+                font-size: 1.9em;
+                padding: 10px 0 3px 0;
+            }
+        }
+
+        @media (max-height: 700px) {
+            .game-container {
+                gap: 3px;
+                padding: 5px 0 20px 0;
+            }
+            
+            .title {
+                font-size: 1.7em;
+                padding: 8px 0 2px 0;
+            }
+            
+            .target-section {
+                padding: 10px;
+            }
+            
+            .target-number {
+                font-size: 1.8em;
+                min-height: 40px;
+            }
+            
+            .card {
+                font-size: 1.3em;
+            }
+            
+            .operator {
+                padding: 10px;
+                font-size: 1.1em;
+            }
+        }
+
+        @media (max-height: 650px) {
+            .game-container {
+                gap: 4px;
+                padding: 3px 0 18px 0;
+            }
+            
+            .title {
+                font-size: 1.5em;
+                padding: 5px 0 2px 0;
+            }
+            
+            .instructions {
+                font-size: 0.8em;
+                padding: 6px 10px;
+            }
+            
+            .target-number {
+                font-size: 1.6em;
+                min-height: 35px;
+            }
+            
+            .card {
+                font-size: 1.2em;
+            }
+            
+            .operator {
+                padding: 8px;
+                font-size: 1em;
+            }
+            
+            .combo-display {
+                font-size: 1em;
+                padding: 6px;
+            }
+            
+            .message {
+                font-size: 0.8em;
+                min-height: 25px;
+                padding: 6px;
+            }
+            
+            .btn {
+                padding: 10px;
+                font-size: 0.9em;
+            }
+            
+            .stat-item {
+                padding: 8px;
+                font-size: 0.75em;
+            }
+        }
+
+        @media (max-height: 600px) {
+            .instructions {
+                display: none;
+            }
+            
+            .game-container {
+                gap: 3px;
+                padding: 2px 0 15px 0;
+            }
+            
+            .title {
+                font-size: 1.3em;
+                padding: 5px 0 2px 0;
+            }
+            
+            .target-number {
+                font-size: 1.4em;
+                min-height: 30px;
+            }
+            
+            .card {
+                font-size: 1.1em;
+            }
+            
+            .info-section {
+                font-size: 0.7em;
+            }
+        }
+
+        @media (max-height: 550px) {
+            .target-section {
+                padding: 6px;
+            }
+            
+            .target-number {
+                font-size: 1.2em;
+                min-height: 25px;
+            }
+            
+            .card {
+                font-size: 1em;
+            }
+            
+            .operator {
+                padding: 6px;
+                font-size: 0.9em;
+            }
+            
+            .btn {
+                padding: 8px;
+                font-size: 0.8em;
+            }
+            
+            .combo-display {
+                font-size: 0.9em;
+                padding: 4px;
+            }
+            
+            .message {
+                font-size: 0.75em;
+                min-height: 20px;
+                padding: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ゲーム説明ポップアップ -->
+    <div class="intro-modal" id="introModal">
+        <div class="intro-content">
+            <div class="intro-title">🌟 JUKEN BINGO 🌟</div>
+            <div class="intro-text">
+                ５枚のカードを計算して<br>目標の数字にしよう！
+            </div>
+            <div class="intro-highlight">
+                🎯 目標がつくれない確率は<br><strong>3000回に1回！</strong>
+            </div>
+            <div class="intro-text">
+                きっと解けるから<br>諦めずに頑張ろう！💪✨
+            </div>
+            <button class="intro-ok-btn" id="introOkBtn">OK！</button>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <div class="title" id="title"><br>
+            JUKEN BINGO
+        </div>
+        
+        <div class="main-content">
+            <div class="combo-display" id="combo-display">✨ COMBO x0 ✨</div>
+            
+            <div class="info-section">
+                <div class="info-item">💎 スコア: <span id="score">0</span></div>
+                <div class="info-item">📚 問題: <span id="problem-count">1</span></div>
+                <div class="info-item">⏰ 時間: <span id="timer">0</span>秒</div>
+            </div>
+
+            <div class="target-section">
+                <div class="target-label">🎯 目標の数字 🎯</div>
+                <div class="target-number" id="target">?</div>
+            </div>
+
+            <div class="cards-container">
+                <div class="card" id="card1">?</div>
+                <div class="card" id="card2">?</div>
+                <div class="card" id="card3">?</div>
+                <div class="card" id="card4">?</div>
+                <div class="card" id="card5">?</div>
+            </div>
+
+            <div class="operators">
+                <button class="operator" data-op="+">+</button>
+                <button class="operator" data-op="-">−</button>
+                <button class="operator" data-op="*">×</button>
+                <button class="operator" data-op="/">÷</button>
+            </div>
+
+            <div class="message" id="message">🌟 STARTボタンを押してゲーム開始！ 🌟</div>
+
+            <div class="controls">
+                <button class="btn btn-start" id="start-btn">START</button>
+                <button class="btn btn-clear" id="clear-btn">CLEAR</button>
+                <button class="btn btn-retry" id="retry-btn" style="display:none;">RETRY</button>
+            </div>
+
+            <div class="stats-section">
+                <div class="stat-item">
+                    <div>🏆 今日の最高得点</div>
+                    <div class="stat-value" id="best-score">0</div>
+                </div>
+                <div class="stat-item">
+                    <div>🎀 正解率</div>
+                    <div class="stat-value" id="accuracy">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 効果音システム
+        const SoundSystem = {
+            context: null,
+            
+            init() {
+                try {
+                    this.context = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.log('Audio not supported');
+                }
+            },
+
+            playTone(frequency, duration, type = 'sine', volume = 0.3) {
+                if (!this.context) return;
+                
+                const oscillator = this.context.createOscillator();
+                const gainNode = this.context.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.context.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, this.context.currentTime);
+                oscillator.type = type;
+                
+                gainNode.gain.setValueAtTime(0, this.context.currentTime);
+                gainNode.gain.linearRampToValueAtTime(volume, this.context.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.context.currentTime + duration);
+                
+                oscillator.start(this.context.currentTime);
+                oscillator.stop(this.context.currentTime + duration);
+            },
+
+            click() {
+                this.playTone(800, 0.1, 'square', 0.2);
+            },
+
+            select() {
+                this.playTone(600, 0.15, 'sine', 0.3);
+            },
+
+            calculate() {
+                this.playTone(400, 0.2, 'triangle', 0.25);
+                setTimeout(() => this.playTone(600, 0.15, 'triangle', 0.25), 100);
+            },
+
+            success() {
+                this.playTone(523, 0.2, 'sine', 0.4);
+                setTimeout(() => this.playTone(659, 0.2, 'sine', 0.4), 150);
+                setTimeout(() => this.playTone(784, 0.3, 'sine', 0.4), 300);
+            },
+
+            combo() {
+                this.playTone(880, 0.15, 'sine', 0.4);
+                setTimeout(() => this.playTone(1047, 0.15, 'sine', 0.4), 100);
+                setTimeout(() => this.playTone(1319, 0.2, 'sine', 0.4), 200);
+            },
+
+            perfect() {
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        this.playTone(523 + i * 100, 0.15, 'sine', 0.3);
+                    }, i * 100);
+                }
+            },
+
+            error() {
+                this.playTone(200, 0.5, 'sawtooth', 0.3);
+            },
+
+            shuffle() {
+                this.playTone(Math.random() * 400 + 200, 0.05, 'square', 0.1);
+            }
+        };
+
+        // パーティクルシステム
+        const ParticleSystem = {
+            createParticle(x, y, emoji, count = 1) {
+                for (let i = 0; i < count; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.textContent = emoji;
+                    particle.style.left = (x + Math.random() * 40 - 20) + 'px';
+                    particle.style.top = (y + Math.random() * 20 - 10) + 'px';
+                    document.body.appendChild(particle);
+
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 2000);
+                }
+            },
+
+            createConfetti(count = 20) {
+                const colors = ['#ff69b4', '#da70d6', '#ff1493', '#ffd700', '#98fb98', '#87ceeb', '#dda0dd'];
+                
+                for (let i = 0; i < count; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.left = Math.random() * window.innerWidth + 'px';
+                    confetti.style.top = '-10px';
+                    confetti.style.animationDelay = Math.random() * 2 + 's';
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => {
+                        if (confetti.parentNode) {
+                            confetti.parentNode.removeChild(confetti);
+                        }
+                    }, 3000);
+                }
+            },
+
+            success(x, y) {
+                this.createParticle(x, y, '🌟', 5);
+                this.createParticle(x, y, '💖', 3);
+                this.createParticle(x, y, '✨', 4);
+            },
+
+            combo(x, y) {
+                this.createParticle(x, y, '💕', 3);
+                this.createParticle(x, y, '🎀', 2);
+                this.createParticle(x, y, '💎', 2);
+            },
+
+            perfect() {
+                this.createConfetti(40);
+                setTimeout(() => this.createConfetti(30), 500);
+                setTimeout(() => this.createConfetti(20), 1000);
+            }
+        };
+
+        // 実績システム
+        const AchievementSystem = {
+            achievements: {
+                'first': { emoji: '🎉', name: '初回正解' },
+                'speed': { emoji: '⚡', name: 'スピードマスター' },
+                'combo5': { emoji: '🔥', name: 'コンボマスター' },
+                'combo10': { emoji: '💎', name: 'コンボキング' },
+                'perfect': { emoji: '👑', name: 'パーフェクト' }
+            },
+
+            unlocked: new Set(),
+
+            unlock(id) {
+                if (this.unlocked.has(id)) return false;
+                
+                this.unlocked.add(id);
+                this.showBadge(id);
+                return true;
+            },
+
+            showBadge(id) {
+                const achievement = this.achievements[id];
+                if (!achievement) return;
+
+                const badge = document.createElement('span');
+                badge.className = 'badge';
+                badge.textContent = achievement.emoji;
+                badge.title = achievement.name;
+                
+                if (elements.title) { 
+                    elements.title.appendChild(badge); 
+                }
+
+                setTimeout(() => {
+                    badge.style.opacity = '0.5';
+                }, 5000);
+            }
+        };
+
+        // カードデッキの定義
+        const CARD_DECK = [
+            1,1,1, 2,2,2, 3,3,3, 4,4,4, 5,5,5, 6,6,6,
+            7,7,7,7, 8,8,8,8, 9,9,9,9, 10,10,10,10,
+            11,11, 12,12, 13,13, 14,14, 15,15, 16,16, 17,17,
+            18, 19, 20, 21, 22, 23, 24, 25
+        ];
+
+        // ゲーム状態
+        let gameState = {
+            cards: [],
+            target: 0,
+            selectedCards: [],
+            currentValues: [],
+            calculations: [],
+            score: 0,
+            problemCount: 1,
+            combo: 0,
+            totalProblems: 0,
+            correctAnswers: 0,
+            bestScore: 0,
+            startTime: null,
+            timerInterval: null,
+            isGameActive: false,
+            gamePhase: 'waiting',
+            originalCards: [],
+            originalTarget: 0
+        };
+
+        // DOM要素
+        const elements = {
+            title: document.getElementById('title'),
+            cards: [
+                document.getElementById('card1'),
+                document.getElementById('card2'),
+                document.getElementById('card3'),
+                document.getElementById('card4'),
+                document.getElementById('card5')
+            ],
+            target: document.getElementById('target'),
+            operators: document.querySelectorAll('.operator'),
+            calculationDisplay: document.getElementById('calculation-display'), 
+            message: document.getElementById('message'),
+            startBtn: document.getElementById('start-btn'),
+            clearBtn: document.getElementById('clear-btn'),
+            retryBtn: document.getElementById('retry-btn'),
+            score: document.getElementById('score'),
+            problemCount: document.getElementById('problem-count'),
+            timer: document.getElementById('timer'),
+            comboDisplay: document.getElementById('combo-display'),
+            bestScore: document.getElementById('best-score'),
+            accuracy: document.getElementById('accuracy'),
+            introModal: document.getElementById('introModal'),
+            introOkBtn: document.getElementById('introOkBtn')
+        };
+
+        // 初期化
+        function init() {
+            SoundSystem.init();
+            setupEventListeners();
+            loadStats();
+            updateDisplay();
+            showIntroModal();
+        }
+
+        // イントロモーダル表示
+        function showIntroModal() {
+            // 既に表示したかどうかをチェック
+            const hasSeenIntro = localStorage.getItem('jukenBingoIntroSeen');
+            if (!hasSeenIntro) {
+                elements.introModal.classList.remove('hidden');
+                localStorage.setItem('jukenBingoIntroSeen', 'true');
+            }
+        }
+
+        // イントロモーダルを閉じる
+        function hideIntroModal() {
+            SoundSystem.click();
+            elements.introModal.classList.add('hidden');
+        }
+
+        // 統計読み込み
+        function loadStats() {
+            const saved = localStorage.getItem('jukenBingoStats');
+            if (saved) {
+                const stats = JSON.parse(saved);
+                gameState.bestScore = stats.bestScore || 0;
+                gameState.totalProblems = stats.totalProblems || 0;
+                gameState.correctAnswers = stats.correctAnswers || 0;
+            }
+        }
+
+        // 統計保存
+        function saveStats() {
+            const stats = {
+                bestScore: gameState.bestScore,
+                totalProblems: gameState.totalProblems,
+                correctAnswers: gameState.correctAnswers
+            };
+            localStorage.setItem('jukenBingoStats', JSON.stringify(stats));
+        }
+
+        // 表示更新
+        function updateDisplay() {
+            elements.score.textContent = gameState.score;
+            elements.problemCount.textContent = gameState.problemCount;
+            elements.bestScore.textContent = gameState.bestScore;
+            
+            const accuracy = gameState.totalProblems > 0 
+                ? Math.round((gameState.correctAnswers / gameState.totalProblems) * 100)
+                : 0;
+            elements.accuracy.textContent = accuracy + '%';
+
+            updateComboDisplay();
+        }
+
+        // コンボ表示更新
+        function updateComboDisplay() {
+            if (gameState.combo > 1) {
+                elements.comboDisplay.textContent = `✨ COMBO x${gameState.combo} ✨`;
+                elements.comboDisplay.classList.add('show');
+                
+                if (gameState.combo >= 5) {
+                    document.body.classList.add('combo-mode');
+                }
+            } else {
+                elements.comboDisplay.classList.remove('show');
+                document.body.classList.remove('combo-mode');
+            }
+        }
+
+        // カードをシャッフルしてランダムに5枚選択
+        function selectRandomCards() {
+            const shuffled = [...CARD_DECK].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, 5);
+        }
+
+        // 目標数字をランダムに選択（1-25）
+        function selectRandomTarget() {
+            return Math.floor(Math.random() * 25) + 1;
+        }
+
+        // ゲーム完全リセット
+        function resetGame() {
+            SoundSystem.click();
+            stopTimer();
+            
+            gameState = {
+                cards: [],
+                target: 0,
+                selectedCards: [],
+                currentValues: [],
+                calculations: [],
+                score: 0,
+                problemCount: 1,
+                combo: 0,
+                totalProblems: gameState.totalProblems, 
+                correctAnswers: gameState.correctAnswers, 
+                bestScore: gameState.bestScore, 
+                startTime: null,
+                timerInterval: null,
+                isGameActive: false,
+                gamePhase: 'waiting',
+                originalCards: [],
+                originalTarget: 0
+            };
+
+            elements.target.textContent = '?';
+            elements.startBtn.textContent = 'START';
+            elements.startBtn.disabled = false;
+            elements.retryBtn.style.display = 'none';
+            elements.message.textContent = '🌟 STARTボタンを押してゲーム開始！ 🌟';
+            elements.message.className = 'message';
+            
+            elements.cards.forEach(card => {
+                card.textContent = '?';
+                card.classList.remove('selected', 'shuffling', 'used');
+            });
+            
+            if (elements.calculationDisplay) { 
+                elements.calculationDisplay.innerHTML = '';
+            }
+            document.body.classList.remove('combo-mode', 'perfect-mode');
+            
+            clearIntervals();
+            updateDisplay();
+        }
+
+        // インターバルクリア
+        function clearIntervals() {
+            if (gameState.cardShuffleInterval) {
+                clearInterval(gameState.cardShuffleInterval);
+            }
+            if (gameState.targetShuffleInterval) {
+                clearInterval(gameState.targetShuffleInterval);
+            }
+        }
+
+        // イベントリスナー設定
+        function setupEventListeners() {
+            elements.title.addEventListener('click', resetGame);
+            elements.startBtn.addEventListener('click', handleStartButton);
+            elements.clearBtn.addEventListener('click', clearCalculation);
+            elements.retryBtn.addEventListener('click', retryProblem);
+            elements.introOkBtn.addEventListener('click', hideIntroModal);
+
+            elements.cards.forEach((card, index) => {
+                card.addEventListener('click', () => selectCard(index));
+            });
+
+            elements.operators.forEach(operator => {
+                operator.addEventListener('click', () => selectOperator(operator.dataset.op));
+            });
+        }
+
+        // STARTボタンの処理
+        function handleStartButton() {
+            SoundSystem.click();
+            
+            if (gameState.gamePhase === 'waiting') {
+                gameState.gamePhase = 'cards';
+                elements.startBtn.textContent = 'STOP';
+                elements.message.textContent = '💕 STOPを押してカードを決定！ 💕';
+                startCardShuffle();
+            } else if (gameState.gamePhase === 'cards') {
+                stopCardShuffle();
+                gameState.gamePhase = 'target';
+                elements.message.textContent = '🎀 STOPを押して目標数字を決定！ 🎀';
+                startTargetShuffle();
+            } else if (gameState.gamePhase === 'target') {
+                stopTargetShuffle();
+                startGame();
+            } else if (gameState.gamePhase === 'finished') {
+                startNewRound();
+            }
+        }
+
+        // カードシャッフル開始
+        function startCardShuffle() {
+            gameState.cardShuffleInterval = setInterval(() => {
+                SoundSystem.shuffle();
+                const randomCards = selectRandomCards();
+                elements.cards.forEach((card, index) => {
+                    card.textContent = randomCards[index];
+                    card.classList.add('shuffling');
+                });
+            }, 100);
+        }
+
+        // カードシャッフル停止
+        function stopCardShuffle() {
+            clearInterval(gameState.cardShuffleInterval);
+            gameState.cards = selectRandomCards();
+            gameState.originalCards = [...gameState.cards];
+            gameState.currentValues = [...gameState.cards];
+            
+            elements.cards.forEach((card, index) => {
+                card.textContent = gameState.cards[index];
+                card.classList.remove('shuffling');
+            });
+        }
+
+        // 目標数字シャッフル開始
+        function startTargetShuffle() {
+            gameState.targetShuffleInterval = setInterval(() => {
+                SoundSystem.shuffle();
+                const randomTarget = selectRandomTarget();
+                elements.target.textContent = randomTarget;
+                elements.target.classList.add('shuffling');
+            }, 100);
+        }
+
+        // 目標数字シャッフル停止
+        function stopTargetShuffle() {
+            clearInterval(gameState.targetShuffleInterval);
+            gameState.target = selectRandomTarget();
+            gameState.originalTarget = gameState.target;
+            elements.target.textContent = gameState.target;
+            elements.target.classList.remove('shuffling');
+        }
+
+        // ゲーム開始
+        function startGame() {
+            gameState.gamePhase = 'playing';
+            gameState.isGameActive = true;
+            gameState.startTime = Date.now();
+            
+            startTimer();
+            
+            elements.message.textContent = '💖 2枚のカードを選んで計算しよう！ 💖';
+            elements.startBtn.textContent = 'NEXT';
+            elements.startBtn.disabled = true;
+            elements.retryBtn.style.display = 'none';
+            
+            resetCalculationState();
+        }
+
+        // カード選択
+        function selectCard(index) {
+            if (!gameState.isGameActive) return;
+            if (elements.cards[index].classList.contains('used')) return;
+            
+            const card = elements.cards[index];
+            const rect = card.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            
+            if (card.classList.contains('selected')) {
+                SoundSystem.click();
+                card.classList.remove('selected');
+                const selectedIndex = gameState.selectedCards.indexOf(index);
+                if (selectedIndex > -1) {
+                    gameState.selectedCards.splice(selectedIndex, 1);
+                }
+            } else {
+                if (gameState.selectedCards.length < 2) {
+                    SoundSystem.select();
+                    card.classList.add('selected');
+                    gameState.selectedCards.push(index);
+                    ParticleSystem.createParticle(x, y, '💖', 2);
+                }
+            }
+
+            updateMessage();
+        }
+
+        // メッセージ更新
+        function updateMessage() {
+            if (gameState.selectedCards.length === 0) {
+                elements.message.textContent = '💖 2枚のカードを選んで計算しよう！ 💖';
+            } else if (gameState.selectedCards.length === 1) {
+                elements.message.textContent = '🌸 もう1枚カードを選んでください 🌸';
+            } else {
+                elements.message.textContent = '✨ 演算子を選んでください ✨';
+            }
+        }
+
+        // 演算子選択
+        function selectOperator(operator) {
+            if (!gameState.isGameActive) return;
+            if (gameState.selectedCards.length !== 2) {
+                showError('まず2枚のカードを選んでください');
+                return;
+            }
+
+            const index1 = gameState.selectedCards[0];
+            const index2 = gameState.selectedCards[1];
+            const num1 = gameState.currentValues[index1];
+            const num2 = gameState.currentValues[index2];
+
+            let result;
+            let operatorSymbol;
+
+            switch (operator) {
+                case '+':
+                    result = num1 + num2;
+                    operatorSymbol = '+';
+                    break;
+                case '-':
+                    result = Math.abs(num1 - num2); 
+                    operatorSymbol = '−';
+                    break;
+                case '*':
+                    result = num1 * num2;
+                    operatorSymbol = '×';
+                    break;
+                case '/': 
+                    const largerNum = Math.max(num1, num2);
+                    const smallerNum = Math.min(num1, num2);
+
+                    if (smallerNum === 0) {
+                        showError('0で割ることはできません');
+                        return;
+                    }
+                    if (largerNum % smallerNum !== 0) {
+                        showError('割り切れない計算はできません');
+                        return;
+                    }
+                    result = largerNum / smallerNum;
+                    operatorSymbol = '÷';
+                    break; 
+            }
+
+            if (!Number.isInteger(result)) {
+                showError('結果は整数である必要があります');
+                return;
+            }
+
+            executeCalculation(num1, operatorSymbol, num2, result, index1, index2);
+        }
+
+        // 計算実行
+        function executeCalculation(num1, operator, num2, result, index1, index2) {
+            SoundSystem.calculate();
+            
+            elements.cards[index1].classList.add('used');
+            elements.cards[index2].classList.add('used');
+            elements.cards[index1].classList.remove('selected');
+            elements.cards[index2].classList.remove('selected');
+
+            const firstIndex = Math.min(index1, index2);
+            elements.cards[firstIndex].textContent = result;
+            elements.cards[firstIndex].classList.remove('used');
+            gameState.currentValues[firstIndex] = result;
+
+            const secondIndex = Math.max(index1, index2);
+            gameState.currentValues[secondIndex] = null; 
+
+            gameState.selectedCards = [];
+
+            const activeCards = gameState.currentValues.filter(val => val !== null);
+            if (activeCards.length === 1) {
+                checkGameEnd(result);
+            } else {
+                elements.message.textContent = '🎀 次の計算を続けてください 🎀';
+            }
+        }
+
+        // エラー表示
+        function showError(message) {
+            SoundSystem.error();
+            elements.message.textContent = '💔 ' + message + ' 💔';
+            elements.message.className = 'message error';
+            setTimeout(() => {
+                elements.message.className = 'message';
+                updateMessage();
+            }, 2000);
+        }
+
+        // ゲーム終了チェック
+        function checkGameEnd(finalResult) {
+            gameState.totalProblems++;
+            
+            if (finalResult === gameState.target) {
+                gameState.correctAnswers++;
+                gameState.combo++;
+                
+                const timeElapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+                let timeBonus = Math.max(100, 1000 - (timeElapsed * 10));
+                
+                if (gameState.combo > 1) {
+                    timeBonus *= Math.min(gameState.combo, 5); 
+                }
+                
+                gameState.score += timeBonus;
+                
+                if (gameState.score > gameState.bestScore) {
+                    gameState.bestScore = gameState.score;
+                }
+
+                if (gameState.correctAnswers === 1) {
+                    AchievementSystem.unlock('first');
+                }
+                if (timeElapsed <= 30) {
+                    AchievementSystem.unlock('speed');
+                }
+                if (gameState.combo === 5) {
+                    AchievementSystem.unlock('combo5');
+                }
+                if (gameState.combo === 10) {
+                    AchievementSystem.unlock('combo10');
+                }
+                if (timeElapsed <= 20 && gameState.combo >= 3) {
+                    AchievementSystem.unlock('perfect');
+                    document.body.classList.add('perfect-mode');
+                    ParticleSystem.perfect();
+                    SoundSystem.perfect();
+                }
+
+                SoundSystem.success();
+                const rect = elements.message.getBoundingClientRect();
+                ParticleSystem.success(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                
+                if (gameState.combo > 1) {
+                    SoundSystem.combo();
+                    ParticleSystem.combo(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                }
+
+                let message = `🎉 正解！ ${timeBonus}点獲得！ 🎉`;
+                if (gameState.combo > 1) {
+                    message += ` (${gameState.combo}コンボ! ✨)`;
+                }
+                
+                elements.message.textContent = message;
+                elements.message.className = 'message success';
+
+                if (elements.calculationDisplay) { 
+                    const lastStep = elements.calculationDisplay.lastElementChild;
+                    if (lastStep && lastStep.classList.contains('calculation-step')) {
+                        lastStep.classList.add('correct');
+                    }
+                }
+
+                gameState.problemCount++;
+
+            } else {
+                gameState.combo = 0;
+                document.body.classList.remove('combo-mode', 'perfect-mode');
+                
+                SoundSystem.error();
+                elements.message.textContent = `😢 残念！${gameState.target}になりません 😢`;
+                elements.message.className = 'message error';
+            }
+
+            gameState.isGameActive = false;
+            gameState.gamePhase = 'finished';
+            stopTimer();
+            elements.startBtn.disabled = false;
+            elements.startBtn.textContent = 'NEXT';
+            elements.retryBtn.style.display = 'inline-block';
+            
+            updateDisplay();
+            saveStats();
+
+            setTimeout(() => {
+                elements.message.className = 'message';
+                document.body.classList.remove('perfect-mode');
+            }, 3000);
+        }
+
+        // 計算状態リセット
+        function resetCalculationState() {
+            gameState.selectedCards = [];
+            if (elements.calculationDisplay) { 
+                elements.calculationDisplay.innerHTML = '';
+            }
+            
+            elements.cards.forEach(card => {
+                card.classList.remove('selected', 'used');
+            });
+        }
+
+        // 計算をクリア
+        function clearCalculation() {
+            if (!gameState.isGameActive) return;
+            
+            SoundSystem.click();
+            gameState.currentValues = [...gameState.cards];
+            gameState.selectedCards = [];
+            
+            elements.cards.forEach((card, index) => {
+                card.textContent = gameState.cards[index];
+                card.classList.remove('selected', 'used');
+            });
+            
+            if (elements.calculationDisplay) { 
+                elements.calculationDisplay.innerHTML = '';
+            }
+            elements.message.textContent = '💖 2枚のカードを選んで計算しよう！ 💖';
+            elements.message.className = 'message';
+        }
+
+        // 問題を再挑戦
+        function retryProblem() {
+            SoundSystem.click();
+            
+            gameState.cards = [...gameState.originalCards];
+            gameState.target = gameState.originalTarget;
+            gameState.currentValues = [...gameState.originalCards];
+            gameState.selectedCards = [];
+            gameState.isGameActive = true;
+            gameState.gamePhase = 'playing';
+            gameState.startTime = Date.now();
+            
+            elements.target.textContent = gameState.target;
+            elements.cards.forEach((card, index) => {
+                card.textContent = gameState.cards[index];
+                card.classList.remove('selected', 'used');
+            });
+            
+            if (elements.calculationDisplay) { 
+                elements.calculationDisplay.innerHTML = '';
+            }
+            elements.message.textContent = '💖 2枚のカードを選んで計算しよう！ 💖';
+            elements.message.className = 'message';
+            elements.startBtn.disabled = true;
+            elements.retryBtn.style.display = 'none';
+            
+            startTimer();
+        }
+
+        // 新しいラウンド開始
+        function startNewRound() {
+            gameState.gamePhase = 'waiting';
+            gameState.selectedCards = [];
+            gameState.currentValues = [];
+            
+            elements.startBtn.textContent = 'START';
+            elements.target.textContent = '?';
+            elements.cards.forEach(card => {
+                card.textContent = '?';
+                card.classList.remove('selected', 'shuffling', 'used');
+            });
+            if (elements.calculationDisplay) { 
+                elements.calculationDisplay.innerHTML = '';
+            }
+            elements.message.textContent = '🌟 STARTボタンを押してゲーム開始！ 🌟';
+            elements.message.className = 'message';
+            elements.retryBtn.style.display = 'none';
+        }
+
+        // タイマー開始
+        function startTimer() {
+            gameState.timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+                elements.timer.textContent = elapsed;
+            }, 1000);
+        }
+
+        // タイマー停止
+        function stopTimer() {
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+                gameState.timerInterval = null;
+            }
+        }
+
+        // ゲーム開始
+        init();
+
+        // タッチイベント対応
+        document.addEventListener('touchstart', function() {
+            if (SoundSystem.context && SoundSystem.context.state === 'suspended') {
+                SoundSystem.context.resume();
+            }
+        }, { once: true });
+    </script>
+</body>
+</html>
